@@ -506,7 +506,6 @@ export class Snap {
 
         // 只有当目标元素的边与吸附线重合时才渲染
         if (sameTypeLines.length > 0) {
-          // console.log('sameTypeLines', sameTypeLines, collisionPoints)
           // 收集所有相关点（碰撞点 + 对齐的目标点）
           const allPoints = this.filterMidPoints(axis, [
             ...collisionPoints,
@@ -651,8 +650,11 @@ export class Snap {
    * 获取子级元素
    */
   private getAllElements(): IUI[] {
-    const child = this.parentContainer?.children?.filter(this.isValidElement) || []
-    return [this.parentContainer, ...child]
+    const list = [
+      this.parentContainer,
+      ...(this.parentContainer?.children || []),
+    ]
+    return list.filter(this.isValidElement) || []
   }
 
   /**
@@ -662,10 +664,14 @@ export class Snap {
     const zoomLayer = this.app.zoomLayer
     if (!zoomLayer)
       return this.getAllElements()
-    const layerBounds = zoomLayer.getLayoutBounds('box', this.app.tree)
-    const vb = new Bounds(layerBounds)
+    const vb = new Bounds(
+      zoomLayer.x,
+      zoomLayer.y,
+      -zoomLayer.x + zoomLayer.width / zoomLayer.scaleX,
+      -zoomLayer.y + zoomLayer.height / zoomLayer.scaleY,
+    )
     return this.getAllElements().filter((element) => {
-      const elementBounds = element.getLayoutBounds('box', this.app.tree)
+      const elementBounds = element.getLayoutBounds('box', 'world')
       return vb.hit(elementBounds)
     })
   }
