@@ -3,7 +3,7 @@
   "type": "module",
   "version": "1.0.0",
   "packageManager": "pnpm@10.6.2",
-  "description": "leafer 裁剪插件，提供支持裁剪的图片组件，支持双击开启内部编辑进行裁剪",
+  "description": "leafer 吸附插件，为 Leafer 应用提供元素移动自动吸附、对齐辅助线功能",
   "author": "XiaDeYu <1579883916@qq.com>",
   "license": "MIT",
   "homepage": "https://github.com/Xdy1579883916/leafer-x-easy-snap#readme",
@@ -12,7 +12,11 @@
     "url": "git+https://github.com/Xdy1579883916/leafer-x-easy-snap.git"
   },
   "bugs": "https://github.com/Xdy1579883916/leafer-x-easy-snap/issues",
-  "keywords": [],
+  "keywords": [
+    "leafer",
+    "吸附插件",
+    "对齐辅助线"
+  ],
   "sideEffects": false,
   "exports": {
     ".": "./dist/index.mjs",
