@@ -12,7 +12,22 @@
 npm i leafer-x-easy-snap
 ```
 
-### 使用方式： 【[playground](playground/src/main.ts)】
+### 快速使用
+```ts
+import { Snap } from 'leafer-x-easy-snap'
+
+const app = new App({
+  view: window,
+  editor: {}
+});
+
+const snap = new Snap(app);
+
+// 启用
+snap.enable(true);
+```
+
+###  更多使用方式请移步 【[playground](playground/src/main.ts)】
 
 ### 项目参考自：【[leafer-x-snap](https://github.com/tuntun0609/leafer-x-snap)】
 
@@ -44,14 +59,14 @@ interface SnapConfig {
 
 ### 特点
 1. 绘制对齐辅助线的策略变更：基于移动元素 x、y 轴各生成最多3条线，绘制时会显示所有在线上的点
-2. 基于父容器查找兄弟元素进行吸附，含父容器
+2. 基于 `parentContainer` 查找兄弟元素进行吸附，含`parentContainer`
 3. 支持通过`updateConfig` 方法动态修改配置，如：更新父容器
 4. 支持 ⌨️ 上下左右 按键微调时显示辅助线
 5. 可以在元素上设置 `isSnap` 属性来控制元素是否参与吸附计算，默认为 `true`
 
 ### 截图示例
-<img alt="clip-style1.png" src="images/1.png" width="200"/>
-<img alt="clip-style1.png" src="images/2.png" width="200"/>
+<img alt="clip-style1.png" src="images/1.png" width="519"/>
+<img alt="clip-style1.png" src="images/2.png" width="514"/>
 
 ## License
 
