@@ -1,0 +1,21 @@
+{
+  "name": "playground",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@cr/lib": "workspace:*",
+    "@leafer-in/editor": "catalog:cli",
+    "@leafer-in/resize": "catalog:cli",
+    "@leafer-in/view": "catalog:cli",
+    "@leafer-in/viewport": "catalog:cli",
+    "@tsconfig/node22": "catalog:cli",
+    "@types/node": "catalog:types",
+    "leafer-ui": "catalog:cli"
+  }
+}

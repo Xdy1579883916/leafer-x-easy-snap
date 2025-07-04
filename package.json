@@ -1,0 +1,65 @@
+{
+  "name": "leafer-x-easy-snap",
+  "type": "module",
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.6.2",
+  "description": "leafer 裁剪插件，提供支持裁剪的图片组件，支持双击开启内部编辑进行裁剪",
+  "author": "XiaDeYu <1579883916@qq.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/Xdy1579883916/leafer-x-easy-snap#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xdy1579883916/leafer-x-easy-snap.git"
+  },
+  "bugs": "https://github.com/Xdy1579883916/leafer-x-easy-snap/issues",
+  "keywords": [],
+  "sideEffects": false,
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "pnpm run -C playground dev",
+    "lint": "eslint",
+    "prepublishOnly": "nr build",
+    "release": "bumpp && pnpm publish",
+    "test": "vitest",
+    "prepare": "simple-git-hooks"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "catalog:cli",
+    "@antfu/ni": "catalog:cli",
+    "@antfu/utils": "catalog:inlined",
+    "@cr/lib": "workspace:*",
+    "@types/node": "catalog:types",
+    "bumpp": "catalog:cli",
+    "eslint": "catalog:cli",
+    "lint-staged": "catalog:cli",
+    "simple-git-hooks": "catalog:cli",
+    "tinyexec": "catalog:utils",
+    "tsx": "catalog:cli",
+    "typescript": "catalog:cli",
+    "unbuild": "catalog:cli",
+    "vite": "catalog:cli",
+    "vitest": "catalog:testing",
+    "vitest-package-exports": "catalog:testing",
+    "yaml": "catalog:testing"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm i --frozen-lockfile --ignore-scripts --offline && npx lint-staged"
+  },
+  "lint-staged": {
+    "*": "eslint --fix"
+  }
+}

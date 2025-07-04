@@ -1,0 +1,21 @@
+{
+  "name": "@cr/lib",
+  "version": "0.0.0",
+  "description": "",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./src/*"
+      ]
+    }
+  },
+  "devDependencies": {
+    "@leafer-in/editor": "catalog:cli",
+    "@leafer-in/interface": "catalog:cli",
+    "@leafer-ui/core": "catalog:cli",
+    "@leafer-ui/interface": "catalog:cli"
+  }
+}
