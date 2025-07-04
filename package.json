@@ -1,7 +1,7 @@
 {
   "name": "leafer-x-easy-snap",
   "type": "module",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "packageManager": "pnpm@10.6.2",
   "description": "leafer 裁剪插件，提供支持裁剪的图片组件，支持双击开启内部编辑进行裁剪",
   "author": "XiaDeYu <1579883916@qq.com>",
