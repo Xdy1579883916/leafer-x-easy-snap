@@ -1,7 +1,7 @@
 {
   "name": "leafer-x-easy-snap",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "packageManager": "pnpm@10.6.2",
   "description": "leafer 吸附插件，为 Leafer 应用提供元素移动自动吸附、对齐辅助线功能",
   "author": "XiaDeYu <1579883916@qq.com>",
