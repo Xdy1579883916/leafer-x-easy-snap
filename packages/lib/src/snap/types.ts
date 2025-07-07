@@ -3,7 +3,7 @@
  * 定义了吸附功能相关的所有接口和类型
  */
 
-import type { IUI } from '@leafer-ui/interface'
+import type { IBox, ILine, IText, IUI } from '@leafer-ui/interface'
 
 /**
  * 基础点坐标接口
@@ -55,6 +55,29 @@ export interface LineCollisionResult {
 }
 
 /**
+ * 距离标签接口
+ * 表示显示在元素边缘的距离标签信息
+ */
+export interface DistanceLabel {
+  /** 吸附点坐标 */
+  snapPoint: Point
+  /** 标签位置（线段中点） */
+  position: Point
+  /** 距离线段起点（元素边界中点） */
+  start: Point
+  /** 距离线段终点（吸附点） */
+  end: Point
+  /** 距离线段中点 */
+  mid: Point
+  /** 距离值（像素） */
+  distance: number
+  /** 标签方向：'left' | 'right' | 'top' | 'bottom' */
+  direction: 'left' | 'right' | 'top' | 'bottom'
+  /** 标签文本 */
+  text: string
+}
+
+/**
  * 元素边界点映射类型
  * 将吸附点类型映射到对应的坐标点
  */
@@ -75,6 +98,8 @@ export interface SnapConfig {
   showLine?: boolean
   /** 是否显示吸附点标记，默认为 true */
   showLinePoints?: boolean
+  /** 是否显示距离标签，默认为 true */
+  showDistanceLabels?: boolean
   /** 吸附范围（像素），默认为 5 */
   snapSize?: number
   /** 吸附线颜色，默认为 '#E03E1A' */
@@ -85,4 +110,10 @@ export interface SnapConfig {
   strokeWidth?: number
   /** 吸附线虚线样式，默认为 null（实线） */
   dashPattern?: number[]
+  /** 距离标签样式，包含线、框和文本样式 */
+  distanceLabelStyle?: {
+    line?: Partial<ILine>
+    box?: Partial<IBox>
+    text?: Partial<IText>
+  }
 }

@@ -8,10 +8,12 @@
  * 3. 创建垂直和水平吸附线
  * 4. 检测目标元素与吸附线的碰撞
  * 5. 应用吸附偏移并渲染可视化提示
+ * 6. 显示距离标签提供距离参考
  */
 
 import type { EditorEvent } from '@leafer-in/editor'
 import type { ISimulateElement } from '@leafer-in/interface'
+import type { Box } from '@leafer-ui/core'
 import type { IApp, IUI } from '@leafer-ui/interface'
 import type { LineCollisionResult, SnapConfig } from './types'
 import { EditorMoveEvent } from '@leafer-in/editor'
@@ -25,13 +27,17 @@ import {
   selectBestLineCollision,
 } from './snap-calc'
 import {
+  clearDistanceLabels,
   clearSnapLines,
   clearSnapPoints,
   destroyRenderElements,
+  drawDistanceLabels,
+  drawDistanceLines,
   drawLines,
   drawSnapPoints,
 } from './snap-render'
 import {
+  calculateDistanceLabels,
   getAllElements,
   getElementBoundPoints,
   getViewportElements,
@@ -66,8 +72,9 @@ export class Snap {
   // 渲染元素缓存
   private verticalLines: any[] = [] // 垂直吸附线元素
   private horizontalLines: any[] = [] // 水平吸附线元素
-  private verticalLinePoints: any[] = [] // 垂直吸附点标记
-  private horizontalLinePoints: any[] = [] // 水平吸附点标记
+  private linePointGroups: any[] = [] // 吸附点标记
+  private distanceLabels: Box[] = [] // 距离标签元素
+  private distanceLines: any[] = [] // 距离线段元素
 
   /**
    * 构造函数
@@ -147,8 +154,8 @@ export class Snap {
     destroyRenderElements(
       this.verticalLines,
       this.horizontalLines,
-      this.verticalLinePoints,
-      this.horizontalLinePoints,
+      this.linePointGroups,
+      this.distanceLabels,
     )
   }
 
@@ -205,6 +212,7 @@ export class Snap {
       return
     if (!this.isSnapping) {
       clearSnapLines(this.verticalLines, this.horizontalLines)
+      clearDistanceLabels(this.distanceLabels)
     }
     const snapResult = calculateSnap(
       target,
@@ -236,13 +244,15 @@ export class Snap {
 
   /**
    * 清除吸附状态
-   * 隐藏吸附线和吸附点标记
+   * 隐藏吸附线、吸附点标记和距离标签
    */
   private clear(): void {
     if (!this.isEnabled)
       return
     clearSnapLines(this.verticalLines, this.horizontalLines)
-    clearSnapPoints(this.verticalLinePoints, this.horizontalLinePoints)
+    clearSnapPoints(this.linePointGroups)
+    clearDistanceLabels(this.distanceLabels)
+    clearSnapLines(this.distanceLines, [])
     this.isSnapping = false
   }
 
@@ -293,8 +303,8 @@ export class Snap {
   }
 
   /**
-   * 渲染吸附线
-   * 根据碰撞结果绘制吸附线和吸附点标记
+   * 渲染吸附线和距离标签
+   * 根据碰撞结果绘制吸附线、吸附点标记和距离标签
    * @param target 目标元素
    * @param snapResult 碰撞结果
    */
@@ -334,7 +344,14 @@ export class Snap {
     drawLines(linesToDraw.vertical, 'vertical', this.verticalLines, this.app, this.config)
     drawLines(linesToDraw.horizontal, 'horizontal', this.horizontalLines, this.app, this.config)
     if (this.config.showLinePoints) {
-      drawSnapPoints(allCollisionPoints, this.verticalLinePoints, this.app, this.config)
+      drawSnapPoints(allCollisionPoints, this.linePointGroups, this.app, this.config)
+    }
+
+    // 绘制距离线段和标签
+    if (this.config.showDistanceLabels) {
+      const distanceLabels = calculateDistanceLabels(target, snapResult, this.app.tree, this.layerScale)
+      drawDistanceLines(distanceLabels, this.distanceLines, this.app, this.config)
+      drawDistanceLabels(distanceLabels, this.distanceLabels, this.app, this.config)
     }
   }
 }

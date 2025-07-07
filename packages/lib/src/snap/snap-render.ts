@@ -3,8 +3,8 @@
  * 负责吸附线和吸附点的可视化渲染
  */
 
-import type { Point, SnapConfig } from './types'
-import { Group, Line } from '@leafer-ui/core'
+import type { DistanceLabel, Point, SnapConfig } from './types'
+import { Box, Group, Line, Text } from '@leafer-ui/core'
 
 /**
  * 绘制吸附线
@@ -40,6 +40,7 @@ export function createSnapLine(direction: 'vertical' | 'horizontal', config: Sna
     className: `snap-line-${direction}`,
     visible: false,
     dashPattern: config.dashPattern,
+    zIndex: 2,
   })
 }
 
@@ -115,6 +116,7 @@ export function createSnapPoint(config: SnapConfig): Group {
     children: [line1, line2],
     around: 'center', // 以中心点为基准
     visible: false,
+    zIndex: 3,
   })
 }
 
@@ -137,6 +139,105 @@ export function updateSnapPoint(pointGroup: Group, point: Point, app: any) {
 }
 
 /**
+ * 绘制距离线段
+ * @param labels 距离标签信息数组
+ * @param lineArray 距离线段元素缓存数组
+ * @param app Leafer应用实例
+ * @param config 吸附配置
+ */
+export function drawDistanceLines(labels: DistanceLabel[], lineArray: Line[], app: any, config: SnapConfig) {
+  labels.forEach((label, index) => {
+    let line = lineArray[index]
+    if (!line) {
+      line = new Line({
+        stroke: config.lineColor,
+        strokeWidth: config.strokeWidth,
+        ...(config?.distanceLabelStyle?.line || {}),
+        className: 'distance-line',
+        visible: false,
+        zIndex: 1,
+      })
+      lineArray.push(line)
+      app.sky?.add(line)
+    }
+    // 转换为世界坐标
+    const start = app.tree?.getWorldPoint(label.start)
+    const end = app.tree?.getWorldPoint(label.end)
+    if (start && end) {
+      line.set({
+        points: [start.x, start.y, end.x, end.y],
+        visible: true,
+      })
+    }
+  })
+}
+
+/**
+ * 绘制距离标签
+ * 在距离线段中点显示标签
+ * @param labels 距离标签信息数组
+ * @param labelGroups 标签元素缓存数组
+ * @param app Leafer应用实例
+ * @param config 吸附配置
+ */
+export function drawDistanceLabels(labels: DistanceLabel[], labelGroups: Box[], app: any, config: SnapConfig) {
+  labels.forEach((label, index) => {
+    let labelGroup = labelGroups[index]
+    if (!labelGroup) {
+      labelGroup = createDistanceLabel(config)
+      labelGroups.push(labelGroup)
+      app.sky?.add(labelGroup)
+    }
+    updateDistanceLabel(labelGroup, label, app)
+  })
+}
+
+/**
+ * 创建距离标签元素
+ * 创建包含背景和文本的标签组
+ * @param config 吸附配置
+ * @returns 包含背景和文本的Group元素
+ */
+export function createDistanceLabel(config: SnapConfig): Box {
+  return new Box({
+    ...(config.distanceLabelStyle?.box),
+    className: 'distance-label',
+    children: [
+      new Text({
+        ...(config.distanceLabelStyle?.text),
+        className: 'distance-label-text',
+        visible: true,
+      }),
+    ],
+    zIndex: 3,
+    visible: true,
+  })
+}
+
+/**
+ * 更新距离标签的位置和内容
+ * 将本地坐标转换为世界坐标并更新标签
+ * @param labelBox 要更新的标签组
+ * @param label 标签信息
+ * @param app Leafer应用实例
+ */
+export function updateDistanceLabel(labelBox: Box, label: DistanceLabel, app: any) {
+  const worldPoint = app.tree?.getWorldPoint(label.position)
+  if (worldPoint) {
+    const text = labelBox.children[0] as Text
+    text.set({
+      text: label.text,
+      visible: true,
+    })
+    labelBox.set({
+      visible: true,
+      x: worldPoint.x,
+      y: worldPoint.y,
+    })
+  }
+}
+
+/**
  * 清除所有吸附线
  * 隐藏所有垂直和水平吸附线
  * @param verticalLines 垂直线数组
@@ -151,35 +252,54 @@ export function clearSnapLines(verticalLines: Line[], horizontalLines: Line[]) {
 /**
  * 清除所有吸附点标记
  * 隐藏所有吸附点标记
- * @param verticalLinePoints 垂直吸附点数组
- * @param horizontalLinePoints 水平吸附点数组
+ * @param linePointGroups 吸附点数组
  */
-export function clearSnapPoints(verticalLinePoints: Group[], horizontalLinePoints: Group[]) {
-  [...verticalLinePoints, ...horizontalLinePoints].forEach((point) => {
+export function clearSnapPoints(linePointGroups: Group[]) {
+  [...linePointGroups].forEach((point) => {
     point.visible = false
   })
 }
 
 /**
+ * 清除所有距离标签
+ * 隐藏所有距离标签
+ * @param distanceLabels 距离标签数组
+ */
+export function clearDistanceLabels(distanceLabels: Group[]) {
+  distanceLabels.forEach((label) => {
+    label.visible = false
+  })
+}
+
+/**
  * 销毁所有渲染元素
- * 清理吸附线和吸附点标记，释放内存
+ * 清理吸附线、吸附点标记和距离标签，释放内存
  * @param verticalLines 垂直线数组
  * @param horizontalLines 水平线数组
- * @param verticalLinePoints 垂直吸附点数组
- * @param horizontalLinePoints 水平吸附点数组
+ * @param linePointGroups 吸附点数组
+ * @param distanceLabels 距离标签数组
  */
-export function destroyRenderElements(verticalLines: Line[], horizontalLines: Line[], verticalLinePoints: Group[], horizontalLinePoints: Group[]) {
+export function destroyRenderElements(
+  verticalLines: Line[],
+  horizontalLines: Line[],
+  linePointGroups: Group[],
+  distanceLabels: Group[] = [],
+) {
   // 销毁吸附线
   ;[...verticalLines, ...horizontalLines].forEach((line) => {
     line.destroy()
   })
   // 销毁吸附点标记
-  ;[...verticalLinePoints, ...horizontalLinePoints].forEach((point) => {
+  linePointGroups.forEach((point) => {
     point.destroy()
+  })
+  // 销毁距离标签
+  distanceLabels.forEach((label) => {
+    label.destroy()
   })
   // 清空数组引用
   verticalLines.length = 0
   horizontalLines.length = 0
-  verticalLinePoints.length = 0
-  horizontalLinePoints.length = 0
+  linePointGroups.length = 0
+  distanceLabels.length = 0
 }
