@@ -1,1 +1,5 @@
-export * from './Snap'
+export * from './snap'
+export * from './snap/config'
+export * from './snap/snap-calc'
+export * from './snap/snap-render'
+export * from './snap/types'
