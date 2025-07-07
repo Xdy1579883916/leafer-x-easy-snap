@@ -314,9 +314,14 @@ export class Snap {
     const targetSnapPoints: any[] = createSnapPoints(target, el => getElementBoundPoints(el, this.app.tree))
     const targetSnapLines: any[] = createSnapLines(targetSnapPoints)
 
+    // 用于创建距离标签的碰撞结果，只考虑在吸附线上的碰撞点
+    const distanceLabelsSnapResults: { x: LineCollisionResult[], y: LineCollisionResult[] } = {
+      x: [],
+      y: [],
+    }
     // 处理X轴和Y轴的碰撞结果
     Object.entries(snapResult).forEach(([axis, results]) => {
-      (results as LineCollisionResult[]).forEach((result) => {
+      results.forEach((result) => {
         const { line, collisionPoints } = result
         const sameTypeLines = targetSnapLines.filter((v: any) => v.type === line.type && v.value === line.value)
         if (sameTypeLines.length > 0) {
@@ -326,6 +331,7 @@ export class Snap {
           ])
           const invertedAxis = axis === 'x' ? 'y' : 'x'
           if (allPoints.length > 0) {
+            distanceLabelsSnapResults[axis as 'x' | 'y'].push(result)
             const min = Math.min(...allPoints.map((p: any) => p[invertedAxis]))
             const max = Math.max(...allPoints.map((p: any) => p[invertedAxis]))
             if (axis === 'x') {
@@ -349,7 +355,12 @@ export class Snap {
 
     // 绘制距离线段和标签
     if (this.config.showDistanceLabels) {
-      const distanceLabels = calculateDistanceLabels(target, snapResult, this.app.tree, this.layerScale)
+      const distanceLabels = calculateDistanceLabels(
+        target,
+        distanceLabelsSnapResults,
+        this.app.tree,
+        this.layerScale,
+      )
       drawDistanceLines(distanceLabels, this.distanceLines, this.app, this.config)
       drawDistanceLabels(distanceLabels, this.distanceLabels, this.app, this.config)
     }

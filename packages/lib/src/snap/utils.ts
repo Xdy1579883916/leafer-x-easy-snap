@@ -4,8 +4,9 @@
  */
 
 import type { IUI } from '@leafer-ui/interface'
-import type { BoundPoints, DistanceLabel, LineCollisionResult, Point } from './types'
+import type { BoundPoints, DistanceLabel, LineCollisionResult, Point, SnapPoint } from './types'
 import { Bounds } from '@leafer-ui/core'
+import { filterMidPoints } from './snap-calc'
 
 /**
  * 数值精度处理函数
@@ -142,6 +143,87 @@ export function getElementEdgeMidpoints(element: IUI, tree: IUI): {
 }
 
 /**
+ * 处理单个轴向的距离标签计算
+ * @param collisionResults 碰撞结果数组
+ * @param targetEdgeMidpoints 目标元素边界中点
+ * @param axis 轴向类型
+ * @param layerScale 图层缩放比例
+ * @returns 该轴向的距离标签数组
+ */
+function processAxisDistanceLabels(
+  collisionResults: LineCollisionResult[],
+  targetEdgeMidpoints: { left: Point, right: Point, top: Point, bottom: Point },
+  axis: 'x' | 'y',
+  layerScale: number,
+): DistanceLabel[] {
+  if (collisionResults.length === 0)
+    return []
+
+  // 收集所有吸附点
+  const allPoints: SnapPoint[] = []
+  collisionResults.forEach((collision) => {
+    allPoints.push(...filterMidPoints(axis, collision.collisionPoints))
+  })
+
+  // 根据轴向确定处理逻辑
+  const isXAxis = axis === 'x'
+  const [primaryMid, secondaryMid] = isXAxis
+    ? [targetEdgeMidpoints.top, targetEdgeMidpoints.bottom]
+    : [targetEdgeMidpoints.left, targetEdgeMidpoints.right]
+  const [primaryDirection, secondaryDirection] = isXAxis
+    ? ['top' as const, 'bottom' as const]
+    : ['left' as const, 'right' as const]
+
+  // 查找最近的吸附点
+  let nearestPrimary: Point | null = null
+  let nearestSecondary: Point | null = null
+  let minPrimaryDist = Infinity
+  let minSecondaryDist = Infinity
+
+  for (const p of allPoints) {
+    const coord = isXAxis ? p.y : p.x
+    const primaryCoord = isXAxis ? primaryMid.y : primaryMid.x
+    const secondaryCoord = isXAxis ? secondaryMid.y : secondaryMid.x
+
+    const primaryDist = Math.abs(coord - primaryCoord)
+    if (coord < primaryCoord && primaryDist < minPrimaryDist) {
+      minPrimaryDist = primaryDist
+      nearestPrimary = p
+    }
+
+    const secondaryDist = Math.abs(coord - secondaryCoord)
+    if (coord > secondaryCoord && secondaryDist < minSecondaryDist) {
+      minSecondaryDist = secondaryDist
+      nearestSecondary = p
+    }
+  }
+
+  // 创建标签
+  let primaryLabel: DistanceLabel | null = null
+  let secondaryLabel: DistanceLabel | null = null
+  if (nearestPrimary) {
+    primaryLabel = createDistanceLabelWithLineByEdge(nearestPrimary, primaryDirection, targetEdgeMidpoints, layerScale)
+  }
+  if (nearestSecondary) {
+    secondaryLabel = createDistanceLabelWithLineByEdge(nearestSecondary, secondaryDirection, targetEdgeMidpoints, layerScale)
+  }
+
+  // 选择最优标签
+  const labels: DistanceLabel[] = []
+  if (primaryLabel && secondaryLabel && primaryLabel.distance === secondaryLabel.distance) {
+    labels.push(primaryLabel, secondaryLabel)
+  }
+  else if (primaryLabel && (!secondaryLabel || primaryLabel.distance < secondaryLabel.distance)) {
+    labels.push(primaryLabel)
+  }
+  else if (secondaryLabel) {
+    labels.push(secondaryLabel)
+  }
+
+  return labels
+}
+
+/**
  * 计算距离标签信息
  * 找到与目标元素最近的吸附点，并计算标签线段和标签位置
  * @param target 目标元素
@@ -156,98 +238,15 @@ export function calculateDistanceLabels(
   tree: IUI,
   layerScale: number,
 ): DistanceLabel[] {
-  const labels: DistanceLabel[] = []
   const targetEdgeMidpoints = getElementEdgeMidpoints(target, tree)
-
-  // 处理X轴（垂直）吸附线
-  if (snapResults.x.length > 0) {
-    // 收集所有吸附点
-    const allXPoints: Point[] = []
-    snapResults.x.forEach((collision) => {
-      allXPoints.push(...collision.collisionPoints)
-    })
-    const topMid = targetEdgeMidpoints.top
-    const bottomMid = targetEdgeMidpoints.bottom
-    let nearestTop: Point | null = null
-    let nearestBottom: Point | null = null
-    let minTopDist = Infinity
-    let minBottomDist = Infinity
-    for (const p of allXPoints) {
-      const topDist = Math.abs(p.y - topMid.y)
-      if (p.y < topMid.y && topDist < minTopDist) {
-        minTopDist = topDist
-        nearestTop = p
-      }
-      const bottomDist = Math.abs(p.y - bottomMid.y)
-      if (p.y > bottomMid.y && bottomDist < minBottomDist) {
-        minBottomDist = bottomDist
-        nearestBottom = p
-      }
-    }
-    let topLabel: DistanceLabel | null = null
-    let bottomLabel: DistanceLabel | null = null
-    if (nearestTop) {
-      topLabel = createDistanceLabelWithLineByEdge(nearestTop, 'top', targetEdgeMidpoints, layerScale)
-    }
-    if (nearestBottom) {
-      bottomLabel = createDistanceLabelWithLineByEdge(nearestBottom, 'bottom', targetEdgeMidpoints, layerScale)
-    }
-
-    if (topLabel && bottomLabel && topLabel.distance === bottomLabel.distance) {
-      labels.push(topLabel, bottomLabel)
-    }
-    else if (topLabel && (!bottomLabel || topLabel.distance < bottomLabel.distance)) {
-      labels.push(topLabel)
-    }
-    else if (bottomLabel) {
-      labels.push(bottomLabel)
-    }
-  }
-
-  // 处理Y轴（水平）吸附线
-  if (snapResults.y.length > 0) {
-    const allYPoints: Point[] = []
-    snapResults.y.forEach((collision) => {
-      allYPoints.push(...collision.collisionPoints)
-    })
-    const leftMid = targetEdgeMidpoints.left
-    const rightMid = targetEdgeMidpoints.right
-    let nearestLeft: Point | null = null
-    let nearestRight: Point | null = null
-    let minLeftDist = Infinity
-    let minRightDist = Infinity
-    for (const p of allYPoints) {
-      const leftDist = Math.abs(p.x - leftMid.x)
-      if (p.x < leftMid.x && leftDist < minLeftDist) {
-        minLeftDist = leftDist
-        nearestLeft = p
-      }
-      const rightDist = Math.abs(p.x - rightMid.x)
-      if (p.x > rightMid.x && rightDist < minRightDist) {
-        minRightDist = rightDist
-        nearestRight = p
-      }
-    }
-    let leftLabel: DistanceLabel | null = null
-    let rightLabel: DistanceLabel | null = null
-    if (nearestLeft) {
-      leftLabel = createDistanceLabelWithLineByEdge(nearestLeft, 'left', targetEdgeMidpoints, layerScale)
-    }
-    if (nearestRight) {
-      rightLabel = createDistanceLabelWithLineByEdge(nearestRight, 'right', targetEdgeMidpoints, layerScale)
-    }
-    if (leftLabel && rightLabel && leftLabel.distance === rightLabel.distance) {
-      labels.push(leftLabel, rightLabel)
-    }
-    else if (leftLabel && (!rightLabel || leftLabel.distance < rightLabel.distance)) {
-      labels.push(leftLabel)
-    }
-    else if (rightLabel) {
-      labels.push(rightLabel)
-    }
-  }
-
-  return labels
+  return Object.entries(snapResults).map(([axis, results]) => {
+    return processAxisDistanceLabels(
+      results,
+      targetEdgeMidpoints,
+      axis as 'x' | 'y',
+      layerScale,
+    )
+  }).flat()
 }
 
 /**
