@@ -94,6 +94,18 @@ export interface SnapConfig {
     * <img alt="" src="images/5.png" width="300"/>
     * <img alt="" src="images/6.png" width="300"/>
 
+### 重写收集元素方法 `collectSnapElements` 可实现更灵活的吸附，例如添加标尺参考线等
+```typescript
+class Snap2 extends Snap {
+  collectSnapElements() {
+    const list = super.collectSnapElements()
+    return [...app.sky.find('.guide-line'), ...list]
+  }
+}
+
+const snap = new Snap2(app)
+```
+
 ## License
 
 [MIT](./LICENSE) License © 2024-PRESENT [XiaDeYu](https://github.com/Xdy1579883916)

@@ -261,7 +261,7 @@ export class Snap {
    * 过滤出可用于吸附的元素（排除选中元素、无效元素等）
    * @returns 可吸附元素列表
    */
-  private collectSnapElements(): IUI[] {
+  public collectSnapElements(): IUI[] {
     const selectedElements = this.app.editor?.list || []
     const allElements = this.config.viewportOnly
       ? getViewportElements(this.parentContainer, this.app.zoomLayer)
