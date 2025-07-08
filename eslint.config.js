@@ -8,6 +8,7 @@ export default antfu(
     rules: {
       'ts/explicit-function-return-type': 'off',
       'no-console': 'off',
+      'jsdoc/check-param-names': 'off',
     },
   },
 )

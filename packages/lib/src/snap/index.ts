@@ -67,6 +67,10 @@ export class Snap {
   private isKeyEvent = false // 是否为键盘事件（避免键盘移动时吸附）
   private isEnabled = false // 吸附功能是否启用
 
+  // 节流相关状态
+  private lastMoveTime = 0 // 上次移动时间
+  private readonly throttleDelay = 16 // 节流延迟时间（约60fps）
+
   // 渲染元素缓存
   private verticalLines: any[] = [] // 垂直吸附线元素
   private horizontalLines: any[] = [] // 水平吸附线元素
@@ -206,12 +210,43 @@ export class Snap {
    * 计算吸附结果并应用吸附偏移
    * @param event 移动事件
    */
-  private handleMove(event: any): void {
+  private handleMove(event: EditorMoveEvent): void {
     if (!this.isEnabled)
       return
-    const { target, moveX, moveY } = event
+    const { moveX, moveY } = event
     if (!moveX && !moveY)
       return
+
+    // 使用节流优化性能
+    this.throttledHandleMove(event)
+  }
+
+  /**
+   * 节流处理移动事件
+   * 限制移动事件的处理频率以提升性能
+   * @param event 移动事件
+   */
+  private throttledHandleMove(event: EditorMoveEvent): void {
+    const now = Date.now()
+
+    // 如果距离上次执行时间小于节流延迟，则跳过本次执行
+    if (now - this.lastMoveTime < this.throttleDelay) {
+      return
+    }
+
+    // 执行移动处理并更新时间戳
+    this.executeMove(event)
+    this.lastMoveTime = now
+  }
+
+  /**
+   * 执行移动处理逻辑
+   * 实际的吸附计算和渲染逻辑
+   * @param event 移动事件
+   */
+  private executeMove(event: EditorMoveEvent): void {
+    const { target } = event
+
     if (this.isSnapping) {
       hideRenderElements([
         ...this.verticalLines,
@@ -219,16 +254,19 @@ export class Snap {
         ...this.distanceLabels,
       ])
     }
+
     const snapResult = calculateSnap(
       target,
       this.snapLines,
       el => getElementBoundPoints(el, this.app.tree),
       distance => isInSnapRange(distance, this.config.snapSize, this.layerScale),
     )
+
     this.applySnapOffset(target, {
       x: selectBestLineCollision(snapResult.x),
       y: selectBestLineCollision(snapResult.y),
     })
+
     if (this.config.showLine && (snapResult.x.length || snapResult.y.length)) {
       this.renderSnapLines(target, snapResult)
     }
