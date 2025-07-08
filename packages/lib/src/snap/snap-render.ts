@@ -3,6 +3,7 @@
  * 负责吸附线和吸附点的可视化渲染
  */
 
+import type { IUI } from '@leafer-ui/interface'
 import type { DistanceLabel, Point, SnapConfig } from './types'
 import { Box, Group, Line, Text } from '@leafer-ui/core'
 
@@ -238,68 +239,15 @@ export function updateDistanceLabel(labelBox: Box, label: DistanceLabel, app: an
 }
 
 /**
- * 清除所有吸附线
- * 隐藏所有垂直和水平吸附线
- * @param verticalLines 垂直线数组
- * @param horizontalLines 水平线数组
+ * 销毁元素
  */
-export function clearSnapLines(verticalLines: Line[], horizontalLines: Line[]) {
-  [...verticalLines, ...horizontalLines].forEach((line) => {
-    line.visible = false
-  })
+export function destroyRenderElements(uis: IUI[]) {
+  uis.forEach(ui => ui.destroy())
 }
 
 /**
- * 清除所有吸附点标记
- * 隐藏所有吸附点标记
- * @param linePointGroups 吸附点数组
+ * 隐藏元素
  */
-export function clearSnapPoints(linePointGroups: Group[]) {
-  [...linePointGroups].forEach((point) => {
-    point.visible = false
-  })
-}
-
-/**
- * 清除所有距离标签
- * 隐藏所有距离标签
- * @param distanceLabels 距离标签数组
- */
-export function clearDistanceLabels(distanceLabels: Group[]) {
-  distanceLabels.forEach((label) => {
-    label.visible = false
-  })
-}
-
-/**
- * 销毁所有渲染元素
- * 清理吸附线、吸附点标记和距离标签，释放内存
- * @param verticalLines 垂直线数组
- * @param horizontalLines 水平线数组
- * @param linePointGroups 吸附点数组
- * @param distanceLabels 距离标签数组
- */
-export function destroyRenderElements(
-  verticalLines: Line[],
-  horizontalLines: Line[],
-  linePointGroups: Group[],
-  distanceLabels: Group[] = [],
-) {
-  // 销毁吸附线
-  ;[...verticalLines, ...horizontalLines].forEach((line) => {
-    line.destroy()
-  })
-  // 销毁吸附点标记
-  linePointGroups.forEach((point) => {
-    point.destroy()
-  })
-  // 销毁距离标签
-  distanceLabels.forEach((label) => {
-    label.destroy()
-  })
-  // 清空数组引用
-  verticalLines.length = 0
-  horizontalLines.length = 0
-  linePointGroups.length = 0
-  distanceLabels.length = 0
+export function hideRenderElements(uis: IUI[]) {
+  uis.forEach(ui => ui.visible = 0)
 }

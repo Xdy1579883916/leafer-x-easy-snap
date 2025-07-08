@@ -27,14 +27,12 @@ import {
   selectBestLineCollision,
 } from './snap-calc'
 import {
-  clearDistanceLabels,
-  clearSnapLines,
-  clearSnapPoints,
   destroyRenderElements,
   drawDistanceLabels,
   drawDistanceLines,
   drawLines,
   drawSnapPoints,
+  hideRenderElements,
 } from './snap-render'
 import {
   calculateDistanceLabels,
@@ -75,6 +73,23 @@ export class Snap {
   private linePointGroups: any[] = [] // 吸附点标记
   private distanceLabels: Box[] = [] // 距离标签元素
   private distanceLines: any[] = [] // 距离线段元素
+
+  private get cachedElements(): IUI[][] {
+    return [
+      this.verticalLines,
+      this.horizontalLines,
+      this.linePointGroups,
+      this.distanceLabels,
+      this.distanceLines,
+    ]
+  }
+
+  private get cachedSnaps(): any[][] {
+    return [
+      this.snapPoints,
+      this.snapLines,
+    ]
+  }
 
   /**
    * 构造函数
@@ -117,6 +132,7 @@ export class Snap {
     this.handleBeforeMove = this.handleBeforeMove.bind(this)
     this.handleMove = this.handleMove.bind(this)
     this.clear = this.clear.bind(this)
+    this.destroy = this.destroy.bind(this)
     this.handleKeyEvent = this.handleKeyEvent.bind(this)
   }
 
@@ -133,7 +149,7 @@ export class Snap {
     }
     else {
       this.detachEvents()
-      this.clear()
+      this.destroy()
     }
   }
 
@@ -146,20 +162,6 @@ export class Snap {
   }
 
   /**
-   * 销毁吸附实例
-   * 清理事件监听和渲染元素
-   */
-  public destroy(): void {
-    this.detachEvents()
-    destroyRenderElements(
-      this.verticalLines,
-      this.horizontalLines,
-      this.linePointGroups,
-      this.distanceLabels,
-    )
-  }
-
-  /**
    * 绑定事件监听
    * 监听编辑器移动、鼠标释放、布局变化和键盘事件
    */
@@ -167,7 +169,7 @@ export class Snap {
     const { editor } = this.app
     editor?.on(EditorMoveEvent.BEFORE_MOVE, this.handleBeforeMove)
     editor?.on(EditorMoveEvent.MOVE, this.handleMove)
-    this.app.on(PointerEvent.UP, this.clear)
+    this.app.on(PointerEvent.UP, this.destroy)
     this.app.tree?.on(LayoutEvent.AFTER, this.clear)
     this.app.on([KeyEvent.DOWN, KeyEvent.UP], this.handleKeyEvent, { capture: true })
   }
@@ -180,7 +182,7 @@ export class Snap {
     const { editor } = this.app
     editor?.off(EditorMoveEvent.BEFORE_MOVE, this.handleBeforeMove)
     editor?.off(EditorMoveEvent.MOVE, this.handleMove)
-    this.app.off(PointerEvent.UP, this.clear)
+    this.app.off(PointerEvent.UP, this.destroy)
     this.app.tree?.off(LayoutEvent.AFTER, this.clear)
     this.app.off([KeyEvent.DOWN, KeyEvent.UP], this.handleKeyEvent, { capture: true })
   }
@@ -191,12 +193,12 @@ export class Snap {
    * @param _e 编辑器事件
    */
   private handleBeforeMove(_e: EditorEvent): void {
-    if (!this.isEnabled)
+    if (!this.isEnabled || this.isSnapping)
       return
     const snapElements = this.collectSnapElements()
     this.snapPoints = snapElements.map(el => createSnapPoints(el, el => getElementBoundPoints(el, this.app.tree))).flat()
     this.snapLines = createSnapLines(this.snapPoints)
-    this.isSnapping = false
+    this.isSnapping = true
   }
 
   /**
@@ -210,9 +212,12 @@ export class Snap {
     const { target, moveX, moveY } = event
     if (!moveX && !moveY)
       return
-    if (!this.isSnapping) {
-      clearSnapLines(this.verticalLines, this.horizontalLines)
-      clearDistanceLabels(this.distanceLabels)
+    if (this.isSnapping) {
+      hideRenderElements([
+        ...this.verticalLines,
+        ...this.horizontalLines,
+        ...this.distanceLabels,
+      ])
     }
     const snapResult = calculateSnap(
       target,
@@ -226,7 +231,6 @@ export class Snap {
     })
     if (this.config.showLine && (snapResult.x.length || snapResult.y.length)) {
       this.renderSnapLines(target, snapResult)
-      this.isSnapping = true
     }
   }
 
@@ -247,12 +251,17 @@ export class Snap {
    * 隐藏吸附线、吸附点标记和距离标签
    */
   private clear(): void {
-    if (!this.isEnabled)
-      return
-    clearSnapLines(this.verticalLines, this.horizontalLines)
-    clearSnapPoints(this.linePointGroups)
-    clearDistanceLabels(this.distanceLabels)
-    clearSnapLines(this.distanceLines, [])
+    destroyRenderElements(this.cachedElements.flat())
+    this.cachedElements.forEach(group => group.length = 0)
+  }
+
+  /**
+   * 销毁吸附实例
+   * 清理事件监听和渲染元素
+   */
+  public destroy(): void {
+    this.clear()
+    this.cachedSnaps.forEach(group => group.length = 0)
     this.isSnapping = false
   }
 
