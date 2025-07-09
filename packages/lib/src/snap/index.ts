@@ -40,7 +40,6 @@ import {
   getElementBoundPoints,
   getViewportElements,
   isInSnapRange,
-  toFixed,
 } from './utils'
 
 // 扩展UI元素属性
@@ -259,7 +258,7 @@ export class Snap {
       target,
       this.snapLines,
       el => getElementBoundPoints(el, this.app.tree),
-      distance => isInSnapRange(distance, this.config.snapSize, this.layerScale),
+      distance => isInSnapRange(distance, this.config.snapSize),
     )
 
     this.applySnapOffset(target, {
@@ -311,7 +310,7 @@ export class Snap {
   public collectSnapElements(): IUI[] {
     const selectedElements = this.app.editor?.list || []
     const allElements = this.config.viewportOnly
-      ? getViewportElements(this.parentContainer, this.app.zoomLayer)
+      ? getViewportElements(this.parentContainer, this.app.zoomLayer, this.app.tree)
       : getAllElements(this.parentContainer)
     return allElements.filter((element) => {
       if (selectedElements.includes(element))
@@ -337,12 +336,12 @@ export class Snap {
     Object.entries(snapResult).forEach(([axis, snap]) => {
       if (snap) {
         const editor = this.app.editor
-        editor.list.forEach((element) => {
-          (element as any)[axis as 'x' | 'y'] = toFixed((element as any)[axis as 'x' | 'y'] - snap.offset)
+        editor.list.forEach((element: any) => {
+          element[axis as 'x' | 'y'] = (element[axis as 'x' | 'y'] - snap.offset)
         })
         if (editor.multiple) {
           (target as ISimulateElement).safeChange?.(() => {
-            (target as any)[axis as 'x' | 'y'] = toFixed((target as any)[axis as 'x' | 'y'] - snap.offset)
+            (target as any)[axis as 'x' | 'y'] = ((target as any)[axis as 'x' | 'y'] - snap.offset)
           })
         }
       }

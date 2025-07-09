@@ -23,12 +23,10 @@ export function toFixed(v: number | string, digits = 0): number {
  * 判断距离是否在吸附范围内
  * @param distance 距离值
  * @param snapSize 吸附范围大小
- * @param layerScale 图层缩放比例
  * @returns 是否在吸附范围内
  */
-export function isInSnapRange(distance: number, snapSize: number, layerScale: number): boolean {
-  const snapThreshold = snapSize / layerScale
-  return distance <= snapThreshold
+export function isInSnapRange(distance: number, snapSize: number): boolean {
+  return distance <= snapSize
 }
 
 /**
@@ -81,20 +79,22 @@ export function getAllElements(parentContainer: IUI): IUI[] {
  * 只返回当前视口范围内可见的元素，提高性能
  * @param parentContainer 父容器元素
  * @param zoomLayer 缩放图层信息
+ * @param tree
  * @returns 视口内可吸附元素列表
  */
-export function getViewportElements(parentContainer: IUI, zoomLayer: any): IUI[] {
+export function getViewportElements(parentContainer: IUI, zoomLayer: any, tree: IUI): IUI[] {
   if (!zoomLayer) {
     return getAllElements(parentContainer)
   }
+  const { x, y, width, height, scaleX, scaleY } = zoomLayer
   const vb = new Bounds(
-    zoomLayer.x,
-    zoomLayer.y,
-    -zoomLayer.x + zoomLayer.width / zoomLayer.scaleX,
-    -zoomLayer.y + zoomLayer.height / zoomLayer.scaleY,
+    -x / scaleX,
+    -y / scaleY,
+    (-x + width) / scaleX,
+    (-y + height) / scaleY,
   )
   return getAllElements(parentContainer).filter((element) => {
-    const elementBounds = element.getLayoutBounds('box', 'world')
+    const elementBounds = element.getLayoutBounds('box', tree)
     return vb.hit(elementBounds)
   })
 }
