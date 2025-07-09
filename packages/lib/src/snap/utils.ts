@@ -26,7 +26,7 @@ export function toFixed(v: number | string, digits = 0): number {
  * @returns 是否在吸附范围内
  */
 export function isInSnapRange(distance: number, snapSize: number): boolean {
-  return distance <= snapSize
+  return Math.round(distance) <= snapSize
 }
 
 /**
@@ -41,12 +41,12 @@ export function getElementBoundPoints(element: IUI, tree: IUI): BoundPoints {
   const xs = points.map(p => p.x)
   const ys = points.map(p => p.y)
 
-  const minX = toFixed(Math.min(...xs))
-  const maxX = toFixed(Math.max(...xs))
-  const minY = toFixed(Math.min(...ys))
-  const maxY = toFixed(Math.max(...ys))
-  const centerX = toFixed((minX + maxX) / 2)
-  const centerY = toFixed((minY + maxY) / 2)
+  const minX = (Math.min(...xs))
+  const maxX = (Math.max(...xs))
+  const minY = (Math.min(...ys))
+  const maxY = (Math.max(...ys))
+  const centerX = ((minX + maxX) / 2)
+  const centerY = ((minY + maxY) / 2)
 
   return {
     tl: { x: minX, y: minY }, // 左上角

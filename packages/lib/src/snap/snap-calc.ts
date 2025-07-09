@@ -5,6 +5,7 @@
 
 import type { IUI } from '@leafer-ui/interface'
 import type { BoundPoints, LineCollisionResult, Point, SnapLine, SnapPoint } from './types'
+import { isInSnapRange } from './utils'
 
 /**
  * 为元素创建吸附点
@@ -77,40 +78,46 @@ export function createSnapLines(snapPoints: SnapPoint[]): SnapLine[] {
  * @param line 吸附线
  * @param targetPoints 目标点数组
  * @param axis 检测轴：'x' 或 'y'
- * @param isInSnapRange 判断是否在吸附范围的函数
+ * @param snapSize
  * @returns 碰撞检测结果，无碰撞时返回null
  */
 export function checkLineCollision(
   line: SnapLine,
   targetPoints: Point[],
   axis: 'x' | 'y',
-  isInSnapRange: (distance: number) => boolean,
+  snapSize: number,
 ): LineCollisionResult | null {
-  const collisionPoints: SnapPoint[] = []
   const targetCollisionPoints: Point[] = []
   let minDistance = Infinity
   let offset = 0
+  let hasCollision = false
 
   // 检查每个目标点是否与吸附线发生碰撞
-  targetPoints.forEach((targetPoint) => {
-    const distance = Math.abs(targetPoint[axis] - line.value)
-    if (isInSnapRange(distance)) {
+  for (const targetPoint of targetPoints) {
+    const _offset = targetPoint[axis] - line.value
+    const distance = Math.abs(_offset)
+    if (isInSnapRange(distance, snapSize)) {
+      hasCollision = true
       // 记录最小距离和偏移量
       if (distance < minDistance) {
         minDistance = distance
-        offset = targetPoint[axis] - line.value
+        offset = _offset
       }
       targetCollisionPoints.push(targetPoint)
-      collisionPoints.push(...line.points)
     }
-  })
-  if (collisionPoints.length === 0)
-    return null
+  }
 
-  // 去重碰撞点
-  const uniqueCollisionPoints = collisionPoints.filter((point, index, arr) =>
-    arr.findIndex(p => p.x === point.x && p.y === point.y) === index,
-  )
+  // 如果没有碰撞，直接返回null
+  if (!hasCollision) {
+    return null
+  }
+
+  // 使用Set去重碰撞点，避免O(n²)复杂度
+  const uniqueCollisionPoints = Array.from(new Set(line.points.map(p => `${p.x},${p.y}`))).map((key) => {
+    const [x, y] = key.split(',').map(Number)
+    return line.points.find(p => p.x === x && p.y === y)
+  })
+
   return {
     line,
     collisionPoints: uniqueCollisionPoints,
@@ -136,32 +143,29 @@ export function selectBestLineCollision(results: LineCollisionResult[]): LineCol
 /**
  * 计算吸附结果
  * 检测目标元素与所有吸附线的碰撞情况
- * @param target 目标元素
+ * @param targetPoints
  * @param snapLines 吸附线数组
- * @param getBoundPoints 获取边界点的函数
- * @param isInSnapRange 判断是否在吸附范围的函数
+ * @param snapSize
  * @returns X轴和Y轴的碰撞结果
  */
 export function calculateSnap(
-  target: IUI,
+  targetPoints: BoundPoints,
   snapLines: SnapLine[],
-  getBoundPoints: (el: IUI) => BoundPoints,
-  isInSnapRange: (distance: number) => boolean,
+  snapSize: number,
 ): { x: LineCollisionResult[], y: LineCollisionResult[] } {
-  const targetPoints = getBoundPoints(target)
   const collisionResults = { x: [] as LineCollisionResult[], y: [] as LineCollisionResult[] }
   const targetSnapPoints = Object.values(targetPoints)
 
   // 检测与垂直线的碰撞（X方向吸附）
   snapLines.filter(line => line.type === 'vertical').forEach((line) => {
-    const collisionResult = checkLineCollision(line, targetSnapPoints, 'x', isInSnapRange)
+    const collisionResult = checkLineCollision(line, targetSnapPoints, 'x', snapSize)
     if (collisionResult)
       collisionResults.x.push(collisionResult)
   })
 
   // 检测与水平线的碰撞（Y方向吸附）
   snapLines.filter(line => line.type === 'horizontal').forEach((line) => {
-    const collisionResult = checkLineCollision(line, targetSnapPoints, 'y', isInSnapRange)
+    const collisionResult = checkLineCollision(line, targetSnapPoints, 'y', snapSize)
     if (collisionResult)
       collisionResults.y.push(collisionResult)
   })

@@ -39,7 +39,6 @@ import {
   getAllElements,
   getElementBoundPoints,
   getViewportElements,
-  isInSnapRange,
 } from './utils'
 
 // 扩展UI元素属性
@@ -65,10 +64,6 @@ export class Snap {
   private isSnapping = false // 是否正在吸附
   private isKeyEvent = false // 是否为键盘事件（避免键盘移动时吸附）
   private isEnabled = false // 吸附功能是否启用
-
-  // 节流相关状态
-  private lastMoveTime = 0 // 上次移动时间
-  private readonly throttleDelay = 16 // 节流延迟时间（约60fps）
 
   // 渲染元素缓存
   private verticalLines: any[] = [] // 垂直吸附线元素
@@ -216,26 +211,7 @@ export class Snap {
     if (!moveX && !moveY)
       return
 
-    // 使用节流优化性能
-    this.throttledHandleMove(event)
-  }
-
-  /**
-   * 节流处理移动事件
-   * 限制移动事件的处理频率以提升性能
-   * @param event 移动事件
-   */
-  private throttledHandleMove(event: EditorMoveEvent): void {
-    const now = Date.now()
-
-    // 如果距离上次执行时间小于节流延迟，则跳过本次执行
-    if (now - this.lastMoveTime < this.throttleDelay) {
-      return
-    }
-
-    // 执行移动处理并更新时间戳
     this.executeMove(event)
-    this.lastMoveTime = now
   }
 
   /**
@@ -253,12 +229,12 @@ export class Snap {
         ...this.distanceLabels,
       ])
     }
+    const targetPoints = getElementBoundPoints(target, this.app.tree)
 
     const snapResult = calculateSnap(
-      target,
+      targetPoints,
       this.snapLines,
-      el => getElementBoundPoints(el, this.app.tree),
-      distance => isInSnapRange(distance, this.config.snapSize),
+      this.config.snapSize,
     )
 
     this.applySnapOffset(target, {
@@ -333,16 +309,15 @@ export class Snap {
   }): void {
     if (this.isKeyEvent)
       return
+    function handle(ui: any, axis: any, snap: LineCollisionResult) {
+      ui[axis] = ui[axis] - snap.offset
+    }
     Object.entries(snapResult).forEach(([axis, snap]) => {
       if (snap) {
         const editor = this.app.editor
-        editor.list.forEach((element: any) => {
-          element[axis as 'x' | 'y'] = (element[axis as 'x' | 'y'] - snap.offset)
-        })
+        editor.list.forEach((element: any) => handle(element, axis, snap))
         if (editor.multiple) {
-          (target as ISimulateElement).safeChange?.(() => {
-            (target as any)[axis as 'x' | 'y'] = ((target as any)[axis as 'x' | 'y'] - snap.offset)
-          })
+          (target as ISimulateElement).safeChange?.(() => handle(target, axis, snap))
         }
       }
     })
