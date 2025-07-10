@@ -4,6 +4,7 @@
  */
 
 import type { SnapConfig } from './types'
+import { Box } from '@leafer-ui/core'
 
 /**
  * 预设主题配置 - 粉色主题
@@ -76,5 +77,17 @@ export const DEFAULT_CONFIG: Required<SnapConfig> = {
       verticalAlign: 'middle',
       padding: [1, 4],
     },
+  },
+  // 显示元素等间距盒子
+  showEqualSpacingBoxes: true,
+  // 默认等宽间距Box的创建函数
+  createEqualSpacingBox(): Box {
+    const lineColor = this.lineColor
+    return new Box({
+      fill: lineColor,
+      opacity: 0.3,
+      zIndex: 5,
+      visible: false,
+    })
   },
 }

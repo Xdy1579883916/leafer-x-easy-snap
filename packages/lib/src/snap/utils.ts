@@ -4,7 +4,7 @@
  */
 
 import type { IUI } from '@leafer-ui/interface'
-import type { BoundPoints, DistanceLabel, LineCollisionResult, Point, SnapPoint } from './types'
+import type { BoundPoints, DistanceLabel, EqualSpacingResult, LineCollisionResult, Point, SnapPoint } from './types'
 import { Bounds } from '@leafer-ui/core'
 import { filterMidPoints } from './snap-calc'
 
@@ -292,4 +292,176 @@ function createDistanceLabelWithLineByEdge(
     direction,
     text: `${toFixed(distance, 0)}`,
   }
+}
+
+/**
+ * 计算目标元素为中心的连续等宽间距（X/Y轴扩散）
+ * @param target 目标元素
+ * @param snapElements 可吸附元素列表
+ * @param tree 根节点
+ * @returns 等宽间距结果数组（以目标为中心扩散）
+ */
+export function calculateEqualSpacing(
+  target: IUI,
+  snapElements: IUI[],
+  tree: IUI,
+): EqualSpacingResult[] {
+  const results: EqualSpacingResult[] = []
+  if (!target || !snapElements?.length)
+    return results
+
+  // 容错误差，允许的间距误差
+  const tolerance = 1
+
+  function findEqualSpacing(axis: 'x' | 'y'): void {
+    const isX = axis === 'x'
+    const getStart = (b: BoundPoints) => isX ? b.tl.x : b.tl.y
+    const getEnd = (b: BoundPoints) => isX ? b.br.x : b.bl.y
+
+    // 过滤和排序元素
+    const filterFn = (el: IUI) => {
+      const b = getElementBoundPoints(el, tree)
+      const tBound = getElementBoundPoints(target, tree)
+      const b1 = isX ? b.tl.y : b.tl.x
+      const b2 = isX ? b.bl.y : b.br.x
+      const t1 = isX ? tBound.tl.y : tBound.tl.x
+      const t2 = isX ? tBound.bl.y : tBound.br.x
+      return !(b2 <= t1 || b1 >= t2)
+    }
+
+    const group = [...snapElements, target]
+      .filter(filterFn)
+      .sort((a, b) => getStart(getElementBoundPoints(a, tree)) - getStart(getElementBoundPoints(b, tree)))
+
+    const targetIdx = group.indexOf(target)
+    if (targetIdx === -1) {
+      return
+    }
+
+    // 收集所有间距
+    const spacings: Array<{ start: number, end: number, spacing: number }> = []
+    for (let i = 0; i < group.length - 1; i++) {
+      const curr = getElementBoundPoints(group[i], tree)
+      const next = getElementBoundPoints(group[i + 1], tree)
+      const spacing = toFixed(getStart(next) - getEnd(curr))
+      if (spacing > 0) {
+        spacings.push({ start: i, end: i + 1, spacing })
+      }
+    }
+
+    // 按间距值分组
+    const spacingGroups = new Map<number, Array<{ start: number, end: number }>>()
+    for (const { start, end, spacing } of spacings) {
+      // 找到最接近的间距值
+      let found = false
+      for (const [existingSpacing] of spacingGroups) {
+        if (Math.abs(spacing - existingSpacing) <= tolerance) {
+          spacingGroups.get(existingSpacing)!.push({ start, end })
+          found = true
+          break
+        }
+      }
+      if (!found) {
+        spacingGroups.set(spacing, [{ start, end }])
+      }
+    }
+
+    // 分析每个间距组
+    for (const [spacing, positions] of spacingGroups) {
+      if (positions.length < 2) {
+        continue // 至少需要2个相同间距
+      }
+
+      // 检查是否包含目标元素相关的间距
+      const hasTargetInvolved = positions.some(pos =>
+        pos.start === targetIdx || pos.end === targetIdx,
+      )
+
+      if (!hasTargetInvolved) {
+        continue
+      }
+
+      // 检查间距模式的有效性
+      const isValidPattern = checkSpacingPattern(positions, targetIdx)
+
+      if (isValidPattern) {
+        // 生成等间距结果
+        for (const { start, end } of positions) {
+          const prev = group[start]
+          const next = group[end]
+          const prevBound = getElementBoundPoints(prev, tree)
+          const nextBound = getElementBoundPoints(next, tree)
+
+          // 交集区域
+          const crossStart = Math.max(isX ? prevBound.tl.y : prevBound.tl.x, isX ? nextBound.tl.y : nextBound.tl.x)
+          const crossEnd = Math.min(
+            isX ? prevBound.bl.y : prevBound.br.x,
+            isX ? nextBound.bl.y : nextBound.br.x,
+          )
+
+          results.push({
+            axis,
+            prevElement: prev,
+            nextElement: next,
+            prevSpacing: spacing,
+            nextSpacing: spacing,
+            equalSpacing: spacing,
+            box: isX
+              ? {
+                  x: prevBound.br.x,
+                  y: crossStart,
+                  width: spacing,
+                  height: crossEnd - crossStart,
+                }
+              : {
+                  x: crossStart,
+                  y: prevBound.bl.y,
+                  width: crossEnd - crossStart,
+                  height: spacing,
+                },
+            label: isX
+              ? {
+                  x: prevBound.br.x + spacing / 2,
+                  y: crossStart + (crossEnd - crossStart) / 2,
+                }
+              : {
+                  x: crossStart + (crossEnd - crossStart) / 2,
+                  y: prevBound.bl.y + spacing / 2,
+                },
+          })
+        }
+      }
+    }
+  }
+
+  // 检查间距模式是否有效
+  function checkSpacingPattern(positions: Array<{ start: number, end: number }>, targetIdx: number): boolean {
+    // 检查是否满足原有逻辑的要求
+    const targetInvolved = positions.filter(pos => pos.start === targetIdx || pos.end === targetIdx)
+
+    if (targetInvolved.length === 0) {
+      return false
+    }
+
+    // 检查目标元素两侧的情况
+    const leftPositions = positions.filter(pos => pos.end <= targetIdx)
+    const rightPositions = positions.filter(pos => pos.start >= targetIdx)
+
+    // 如果两侧都有间距，需要间距相等
+    if (leftPositions.length > 0 && rightPositions.length > 0) {
+      return true // 两侧都有等间距，直接有效
+    }
+
+    // 如果只有一侧有间距，需要至少2个等间距
+    if (leftPositions.length >= 2 || rightPositions.length >= 2) {
+      return true
+    }
+
+    return false
+  }
+
+  findEqualSpacing('x')
+  findEqualSpacing('y')
+
+  return results
 }

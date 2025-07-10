@@ -3,7 +3,8 @@
  * 定义了吸附功能相关的所有接口和类型
  */
 
-import type { IBox, ILine, IText, IUI } from '@leafer-ui/interface'
+import type { Box } from '@leafer-ui/core'
+import type { IBoundsData, IBox, ILine, IText, IUI } from '@leafer-ui/interface'
 
 /**
  * 基础点坐标接口
@@ -115,5 +116,39 @@ export interface SnapConfig {
     line?: Partial<ILine>
     box?: Partial<IBox>
     text?: Partial<IText>
+  }
+  /** 显示元素等间距盒子 */
+  showEqualSpacingBoxes?: boolean
+  /** 自定义等宽间距Box的创建函数 */
+  createEqualSpacingBox?: (res: EqualSpacingResult, worldBox: IBoundsData) => Box
+}
+
+/**
+ * 等宽间距结果类型
+ * 用于描述目标元素与相邻元素之间的等宽间距信息
+ */
+export interface EqualSpacingResult {
+  axis: 'x' | 'y'
+  /** 左/上相邻元素 */
+  prevElement?: IUI
+  /** 右/下相邻元素 */
+  nextElement?: IUI
+  /** 左/上间距 */
+  prevSpacing: number
+  /** 右/下间距 */
+  nextSpacing: number
+  /** 等宽间距值（取两者较小值） */
+  equalSpacing: number
+  /** 间距显示区域（Box）坐标 */
+  box: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+  /** 数值标签显示位置 */
+  label: {
+    x: number
+    y: number
   }
 }

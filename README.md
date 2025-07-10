@@ -69,6 +69,10 @@ export interface SnapConfig {
     box?: Partial<IBox>
     text?: Partial<IText>
   }
+  /** 显示元素等间距盒子 */
+  showEqualSpacingBoxes?: boolean
+  /** 自定义等宽间距Box的创建函数 */
+  createEqualSpacingBox?: (res: EqualSpacingResult, worldBox: IBoundsData) => Box
 }
 ```
 
@@ -79,20 +83,27 @@ export interface SnapConfig {
 3. 支持通过`updateConfig` 方法动态修改配置，如：更新父容器
 4. 支持 ⌨️ 上下左右 按键微调时显示辅助线
 5. 可以在元素上设置 `isSnap` 属性来控制元素是否参与吸附计算，默认为 `true`
-6. 支持通过`showDistanceLabels`开启距离标签显示
+6. 支持通过`showDistanceLabels`开启距离标签显示，默认为 `true`
 7. 可通过 `distanceLabelStyle` 自定义距离标签样式：线、框和文本
+8. 支持通过`showEqualSpacingBoxes` 开启等宽间距提示，默认为 `true`
+9. 可通过 `createEqualSpacingBox` 函数创建等宽间距Box
 
 ### 截图示例
 
 * 吸附线基础：X、Y轴各最多3条辅助线，支持指定父容器例如：Frame，父容器 `isLeafer`属性为`false` 时参与吸附计算如下图。
-    * <img alt="" src="images/1.png" width="519"/>
-    * <img alt="" src="images/2.png" width="514"/>
+    * <img alt="" src="images/1.png" width="500"/>
+    * <img alt="" src="images/2.png" width="500"/>
 
 * 取显示的吸附线中，距离元素最近的点，从边的中线创建距离指示线，并创建距离标签。（两侧距离都一致时显示2个距离标签）
     * <img alt="" src="images/3.png" width="300"/>
     * <img alt="" src="images/4.png" width="300"/>
     * <img alt="" src="images/5.png" width="300"/>
     * <img alt="" src="images/6.png" width="300"/>
+
+* 等宽间距提示
+    * <img alt="" src="images/7.png" width="800"/>
+    * <img alt="" src="images/8.png" width="800"/>
+    * <img alt="" src="images/9.png" width="800"/>
 
 ### 重写收集元素方法 `collectSnapElements` 可实现更灵活的吸附，例如添加标尺参考线等
 ```typescript

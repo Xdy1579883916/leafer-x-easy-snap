@@ -3,8 +3,8 @@
  * 负责吸附线和吸附点的可视化渲染
  */
 
-import type { IUI } from '@leafer-ui/interface'
-import type { DistanceLabel, Point, SnapConfig } from './types'
+import type { IApp, IUI } from '@leafer-ui/interface'
+import type { DistanceLabel, EqualSpacingResult, Point, SnapConfig } from './types'
 import { Box, Group, Line, Text } from '@leafer-ui/core'
 
 /**
@@ -235,6 +235,35 @@ export function updateDistanceLabel(labelBox: Box, label: DistanceLabel, app: an
       x: worldPoint.x,
       y: worldPoint.y,
     })
+  }
+}
+
+/**
+ * 绘制等宽间距 Box
+ * @param results 等宽间距结果数组
+ * @param boxArray Box元素缓存数组
+ * @param app Leafer应用实例
+ * @param config 吸附配置
+ */
+export function drawEqualSpacingBoxes(results: EqualSpacingResult[], boxArray: Box[], app: IApp, config: SnapConfig) {
+  results.forEach((res, index) => {
+    // Box 位置和大小
+    const worldBox = app.tree?.getWorldBounds(res.box)
+    let box = boxArray[index]
+    if (!box) {
+      box = config.createEqualSpacingBox(res, worldBox)
+      boxArray.push(box)
+      app.sky?.add(box)
+    }
+
+    box.set({
+      ...worldBox,
+      visible: true,
+    })
+  })
+  // 隐藏多余的 Box
+  for (let i = results.length; i < boxArray.length; i++) {
+    boxArray[i].visible = false
   }
 }
 

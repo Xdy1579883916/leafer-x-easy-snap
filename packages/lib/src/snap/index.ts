@@ -15,7 +15,7 @@ import type { EditorEvent } from '@leafer-in/editor'
 import type { ISimulateElement } from '@leafer-in/interface'
 import type { Box } from '@leafer-ui/core'
 import type { IApp, IUI } from '@leafer-ui/interface'
-import type { LineCollisionResult, SnapConfig } from './types'
+import type { LineCollisionResult, SnapConfig, SnapLine, SnapPoint } from './types'
 import { EditorMoveEvent } from '@leafer-in/editor'
 import { dataType, KeyEvent, LayoutEvent, PointerEvent, UI } from '@leafer-ui/core'
 import { DEFAULT_CONFIG } from './config'
@@ -30,12 +30,14 @@ import {
   destroyRenderElements,
   drawDistanceLabels,
   drawDistanceLines,
+  drawEqualSpacingBoxes,
   drawLines,
   drawSnapPoints,
   hideRenderElements,
 } from './snap-render'
 import {
   calculateDistanceLabels,
+  calculateEqualSpacing,
   getAllElements,
   getElementBoundPoints,
   getViewportElements,
@@ -59,8 +61,9 @@ export class Snap {
   private config: Required<SnapConfig>
 
   // 吸附相关状态
-  private snapPoints: any[] = [] // 所有可吸附元素的边界点
-  private snapLines: any[] = [] // 由边界点组成的吸附线
+  private snapElements: IUI[] = [] // 所有可吸附元素
+  private snapPoints: SnapPoint[] = [] // 所有可吸附元素的边界点
+  private snapLines: SnapLine[] = [] // 由边界点组成的吸附线
   private isSnapping = false // 是否正在吸附
   private isKeyEvent = false // 是否为键盘事件（避免键盘移动时吸附）
   private isEnabled = false // 吸附功能是否启用
@@ -71,6 +74,7 @@ export class Snap {
   private linePointGroups: any[] = [] // 吸附点标记
   private distanceLabels: Box[] = [] // 距离标签元素
   private distanceLines: any[] = [] // 距离线段元素
+  private equalSpacingBoxes: Box[] = [] // 等宽间距Box缓存
 
   private get cachedElements(): IUI[][] {
     return [
@@ -79,6 +83,7 @@ export class Snap {
       this.linePointGroups,
       this.distanceLabels,
       this.distanceLines,
+      this.equalSpacingBoxes,
     ]
   }
 
@@ -86,6 +91,7 @@ export class Snap {
     return [
       this.snapPoints,
       this.snapLines,
+      this.snapElements,
     ]
   }
 
@@ -193,8 +199,8 @@ export class Snap {
   private handleBeforeMove(_e: EditorEvent): void {
     if (!this.isEnabled || this.isSnapping)
       return
-    const snapElements = this.collectSnapElements()
-    this.snapPoints = snapElements.map(el => createSnapPoints(el, el => getElementBoundPoints(el, this.app.tree))).flat()
+    this.snapElements = this.collectSnapElements()
+    this.snapPoints = this.snapElements.map(el => createSnapPoints(el, el => getElementBoundPoints(el, this.app.tree))).flat()
     this.snapLines = createSnapLines(this.snapPoints)
     this.isSnapping = true
   }
@@ -227,6 +233,7 @@ export class Snap {
         ...this.verticalLines,
         ...this.horizontalLines,
         ...this.distanceLabels,
+        ...this.equalSpacingBoxes,
       ])
     }
     const targetPoints = getElementBoundPoints(target, this.app.tree)
@@ -244,6 +251,13 @@ export class Snap {
 
     if (this.config.showLine && (snapResult.x.length || snapResult.y.length)) {
       this.renderSnapLines(target, snapResult)
+    }
+
+    // 计算并渲染等宽间距
+    if (this.config.showEqualSpacingBoxes) {
+      const snapElements = this.snapElements.filter(el => el !== this.parentContainer)
+      const equalSpacingResults = calculateEqualSpacing(target, snapElements, this.app.tree)
+      drawEqualSpacingBoxes(equalSpacingResults, this.equalSpacingBoxes, this.app, this.config)
     }
   }
 
