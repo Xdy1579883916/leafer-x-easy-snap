@@ -41,6 +41,7 @@ import {
   getAllElements,
   getElementBoundPoints,
   getViewportElements,
+  toFixed,
 } from './utils'
 
 // 扩展UI元素属性
@@ -343,7 +344,10 @@ export class Snap {
    * @param target 目标元素
    * @param snapResult 碰撞结果
    */
-  private renderSnapLines(target: IUI, snapResult: { x: LineCollisionResult[], y: LineCollisionResult[] }): void {
+  private renderSnapLines(
+    target: IUI,
+    snapResult: { x: LineCollisionResult[], y: LineCollisionResult[] },
+  ): void {
     const linesToDraw: { vertical: number[][], horizontal: number[][] } = { vertical: [], horizontal: [] }
     const allCollisionPoints: any[] = []
     const targetSnapPoints: any[] = createSnapPoints(target, el => getElementBoundPoints(el, this.app.tree))
@@ -358,7 +362,7 @@ export class Snap {
     Object.entries(snapResult).forEach(([axis, results]) => {
       results.forEach((result) => {
         const { line, collisionPoints } = result
-        const sameTypeLines = targetSnapLines.filter((v: any) => v.type === line.type && v.value === line.value)
+        const sameTypeLines = targetSnapLines.filter((v: any) => v.type === line.type && toFixed(v.value, 0) === toFixed(line.value, 0))
         if (sameTypeLines.length > 0) {
           const allPoints = filterMidPoints(axis, [
             ...collisionPoints,
