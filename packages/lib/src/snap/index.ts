@@ -40,7 +40,6 @@ import {
   calculateEqualSpacing,
   getAllElements,
   getElementBoundPoints,
-  getViewportElements,
   toFixed,
 } from './utils'
 
@@ -300,9 +299,7 @@ export class Snap {
    */
   public collectSnapElements(): IUI[] {
     const selectedElements = this.app.editor?.list || []
-    const allElements = this.config.viewportOnly
-      ? getViewportElements(this.parentContainer, this.app.zoomLayer, this.app.tree)
-      : getAllElements(this.parentContainer)
+    const allElements = getAllElements(this.parentContainer)
     return allElements.filter((element) => {
       if (selectedElements.includes(element))
         return false

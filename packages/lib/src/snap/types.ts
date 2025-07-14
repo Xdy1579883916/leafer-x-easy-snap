@@ -91,8 +91,6 @@ export type BoundPoints = Record<SnapPoint['type'], Point>
 export interface SnapConfig {
   /** 基于哪个容器计算吸附元素，默认为 app.tree */
   parentContainer?: IUI
-  /** 是否只对视口内元素进行吸附，默认为 true */
-  viewportOnly?: boolean
   /** 自定义过滤规则，用于排除特定元素 */
   filter?: (element: IUI) => boolean
   /** 是否显示吸附线，默认为 true */

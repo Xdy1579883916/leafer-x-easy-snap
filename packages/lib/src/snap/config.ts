@@ -43,8 +43,6 @@ export const DEFAULT_CONFIG: Required<SnapConfig> = {
   parentContainer: null,
   // 默认不过滤任何元素
   filter: () => true,
-  // 只对视口内元素进行吸附
-  viewportOnly: true,
   // 吸附范围5像素
   snapSize: 5,
   // 吸附点标记尺寸4像素
