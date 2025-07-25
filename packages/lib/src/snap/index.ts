@@ -64,6 +64,7 @@ export class Snap {
   private snapElements: IUI[] = [] // 所有可吸附元素
   private snapPoints: SnapPoint[] = [] // 所有可吸附元素的边界点
   private snapLines: SnapLine[] = [] // 由边界点组成的吸附线
+  private snapLines4SpacingBoxes: SnapLine[] = [] // 等间距Box的吸附线
   private isSnapping = false // 是否正在吸附
   private isKeyEvent = false // 是否为键盘事件（避免键盘移动时吸附）
   private isEnabled = false // 吸附功能是否启用
@@ -91,6 +92,7 @@ export class Snap {
     return [
       this.snapPoints,
       this.snapLines,
+      this.snapLines4SpacingBoxes,
       this.snapElements,
     ]
   }
@@ -238,19 +240,28 @@ export class Snap {
     }
     const targetPoints = getElementBoundPoints(target, this.app.tree)
 
-    const snapResult = calculateSnap(
+    const forSnap = calculateSnap(
+      targetPoints,
+      [
+        ...this.snapLines,
+        ...this.snapLines4SpacingBoxes,
+      ],
+      this.config.snapSize,
+    )
+
+    const forDrawLine = calculateSnap(
       targetPoints,
       this.snapLines,
       this.config.snapSize,
     )
 
     this.applySnapOffset(target, {
-      x: selectBestLineCollision(snapResult.x),
-      y: selectBestLineCollision(snapResult.y),
+      x: selectBestLineCollision(forSnap.x),
+      y: selectBestLineCollision(forSnap.y),
     })
 
-    if (this.config.showLine && (snapResult.x.length || snapResult.y.length)) {
-      this.renderSnapLines(target, snapResult)
+    if (this.config.showLine && (forDrawLine.x.length || forDrawLine.y.length)) {
+      this.renderSnapLines(target, forDrawLine)
     }
 
     // 计算并渲染等宽间距
@@ -278,6 +289,11 @@ export class Snap {
    * 隐藏吸附线、吸附点标记和距离标签
    */
   private clear(): void {
+    // 如果开启了等间距展示，提供等间距的吸附线，供吸附使用
+    if (this.config.showEqualSpacingBoxes) {
+      const spacingBoxesSnapPoints = this.equalSpacingBoxes.map(el => createSnapPoints(el, el => getElementBoundPoints(el, this.app.tree))).flat()
+      this.snapLines4SpacingBoxes = createSnapLines(spacingBoxesSnapPoints)
+    }
     destroyRenderElements(this.cachedElements.flat())
     this.cachedElements.forEach(group => group.length = 0)
   }
