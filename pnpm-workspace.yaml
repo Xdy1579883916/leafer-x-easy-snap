@@ -7,17 +7,17 @@ catalogs:
   cli:
     '@antfu/eslint-config': ^4.10.1
     '@antfu/ni': ^24.1.0
-    '@leafer-in/editor': ^1.8.0
-    '@leafer-in/interface': ^1.8.0
-    '@leafer-in/resize': ^1.8.0
-    '@leafer-in/view': ^1.8.0
-    '@leafer-in/viewport': ^1.8.0
-    '@leafer-ui/core': ^1.8.0
-    '@leafer-ui/interface': ^1.8.0
+    '@leafer-in/editor': 1.9.4
+    '@leafer-in/interface': 1.9.4
+    '@leafer-in/resize': 1.9.4
+    '@leafer-in/view': 1.9.4
+    '@leafer-in/viewport': 1.9.4
+    '@leafer-ui/core': 1.9.4
+    '@leafer-ui/interface': 1.9.4
     '@tsconfig/node22': ^22.0.2
     bumpp: ^10.1.0
     eslint: ^9.22.0
-    leafer-ui: ^1.8.0
+    leafer-ui: 1.9.4
     lint-staged: ^15.5.0
     simple-git-hooks: ^2.11.1
     tsx: ^4.19.3
