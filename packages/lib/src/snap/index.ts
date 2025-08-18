@@ -16,7 +16,7 @@ import type { ISimulateElement } from '@leafer-in/interface'
 import type { Box } from '@leafer-ui/core'
 import type { IApp, IUI } from '@leafer-ui/interface'
 import type { LineCollisionResult, SnapConfig, SnapLine, SnapPoint } from './types'
-import { EditorMoveEvent } from '@leafer-in/editor'
+import { EditorMoveEvent, EditorScaleEvent } from '@leafer-in/editor'
 import { dataType, KeyEvent, LayoutEvent, PointerEvent, UI } from '@leafer-ui/core'
 import { DEFAULT_CONFIG } from './config'
 import {
@@ -137,6 +137,7 @@ export class Snap {
   private bindEventHandlers(): void {
     this.handleBeforeMove = this.handleBeforeMove.bind(this)
     this.handleMove = this.handleMove.bind(this)
+    this.handleScale = this.handleScale.bind(this)
     this.clear = this.clear.bind(this)
     this.destroy = this.destroy.bind(this)
     this.handleKeyEvent = this.handleKeyEvent.bind(this)
@@ -175,6 +176,8 @@ export class Snap {
     const { editor } = this.app
     editor?.on(EditorMoveEvent.BEFORE_MOVE, this.handleBeforeMove)
     editor?.on(EditorMoveEvent.MOVE, this.handleMove)
+    editor?.on(EditorScaleEvent.BEFORE_SCALE, this.handleBeforeMove)
+    editor?.on(EditorScaleEvent.SCALE, this.handleScale)
     this.app.on(PointerEvent.UP, this.destroy)
     this.app.tree?.on(LayoutEvent.AFTER, this.clear)
     this.app.on([KeyEvent.DOWN, KeyEvent.UP], this.handleKeyEvent, { capture: true })
@@ -188,6 +191,8 @@ export class Snap {
     const { editor } = this.app
     editor?.off(EditorMoveEvent.BEFORE_MOVE, this.handleBeforeMove)
     editor?.off(EditorMoveEvent.MOVE, this.handleMove)
+    editor?.off(EditorScaleEvent.BEFORE_SCALE, this.handleBeforeMove)
+    editor?.off(EditorScaleEvent.SCALE, this.handleScale)
     this.app.off(PointerEvent.UP, this.destroy)
     this.app.tree?.off(LayoutEvent.AFTER, this.clear)
     this.app.off([KeyEvent.DOWN, KeyEvent.UP], this.handleKeyEvent, { capture: true })
@@ -223,11 +228,27 @@ export class Snap {
   }
 
   /**
+   * 处理缩放事件
+   * 计算吸附结果并应用吸附偏移
+   * @param event 缩放事件
+   */
+  private handleScale(event: EditorScaleEvent): void {
+    console.log(event)
+    if (!this.isEnabled)
+      return
+    const { scaleX, scaleY } = event
+    if (!scaleX && !scaleY)
+      return
+
+    this.executeMove(event)
+  }
+
+  /**
    * 执行移动处理逻辑
    * 实际的吸附计算和渲染逻辑
    * @param event 移动事件
    */
-  private executeMove(event: EditorMoveEvent): void {
+  private executeMove(event: EditorEvent): void {
     const { target } = event
 
     if (this.isSnapping) {
