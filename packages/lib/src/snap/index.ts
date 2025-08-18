@@ -233,7 +233,6 @@ export class Snap {
    * @param event 缩放事件
    */
   private handleScale(event: EditorScaleEvent): void {
-    console.log(event)
     if (!this.isEnabled)
       return
     const { scaleX, scaleY } = event
