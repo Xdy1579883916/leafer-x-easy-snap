@@ -1,7 +1,7 @@
 {
   "name": "@gorvey/leafer-x-easy-snap",
   "type": "module",
-  "version": "1.2.1",
+  "version": "1.20.1",
   "packageManager": "pnpm@10.14.0",
   "description": "leafer 吸附插件，为 Leafer 应用提供元素移动自动吸附、对齐辅助线功能",
   "author": "Gorvey <gorvey76@outlook.com>",
