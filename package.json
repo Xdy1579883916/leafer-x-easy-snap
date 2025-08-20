@@ -1,17 +1,17 @@
 {
   "name": "leafer-x-easy-snap",
   "type": "module",
-  "version": "1.10.0",
+  "version": "1.2.0",
   "packageManager": "pnpm@10.14.0",
   "description": "leafer 吸附插件，为 Leafer 应用提供元素移动自动吸附、对齐辅助线功能",
-  "author": "XiaDeYu <1579883916@qq.com>",
+  "author": "Gorvey <gorvey76@outlook.com>",
   "license": "MIT",
-  "homepage": "https://github.com/Xdy1579883916/leafer-x-easy-snap#readme",
+  "homepage": "https://github.com/Gorvey/leafer-x-easy-snap",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Xdy1579883916/leafer-x-easy-snap.git"
+    "url": "git+https://github.com/Gorvey/leafer-x-easy-snap.git"
   },
-  "bugs": "https://github.com/Xdy1579883916/leafer-x-easy-snap/issues",
+  "bugs": "https://github.com/Gorvey/leafer-x-easy-snap/issues",
   "keywords": [
     "leafer",
     "吸附插件",
