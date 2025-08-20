@@ -1,5 +1,5 @@
 {
-  "name": "leafer-x-easy-snap",
+  "name": "@gorvey/leafer-x-easy-snap",
   "type": "module",
   "version": "1.2.0",
   "packageManager": "pnpm@10.14.0",
