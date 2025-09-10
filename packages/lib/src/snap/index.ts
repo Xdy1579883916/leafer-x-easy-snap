@@ -123,6 +123,18 @@ export class Snap {
   }
 
   /**
+   * 获取父容器缩放比例
+   */
+  get parentScale() {
+    try {
+      return this.parentContainer.scale as number || 1
+    }
+    catch {
+      return 1
+    }
+  }
+
+  /**
    * 获取图层缩放比例
    * 用于计算吸附范围的实际像素值
    */
@@ -337,8 +349,8 @@ export class Snap {
   }): void {
     if (this.isKeyEvent)
       return
-    function handle(ui: any, axis: any, snap: LineCollisionResult) {
-      ui[axis] = ui[axis] - snap.offset
+    const handle = (ui: any, axis: any, snap: LineCollisionResult) => {
+      ui[axis] = ui[axis] - snap.offset / this.parentScale
     }
     Object.entries(snapResult).forEach(([axis, snap]) => {
       if (snap) {

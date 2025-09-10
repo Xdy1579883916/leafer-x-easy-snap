@@ -297,6 +297,7 @@ const frame = new Frame({
   ],
   x: 0,
   y: 0,
+  // scale: 2,
 })
 
 // 监听窗口尺寸
