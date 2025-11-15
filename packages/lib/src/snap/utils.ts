@@ -399,36 +399,41 @@ export function calculateEqualSpacing(
             isX ? nextBound.bl.y : nextBound.br.x,
           )
 
-          results.push({
-            axis,
-            prevElement: prev,
-            nextElement: next,
-            prevSpacing: spacing,
-            nextSpacing: spacing,
-            equalSpacing: spacing,
-            box: isX
-              ? {
-                  x: prevBound.br.x,
-                  y: crossStart,
-                  width: spacing,
-                  height: crossEnd - crossStart,
-                }
-              : {
-                  x: crossStart,
-                  y: prevBound.bl.y,
-                  width: crossEnd - crossStart,
-                  height: spacing,
-                },
-            label: isX
-              ? {
-                  x: prevBound.br.x + spacing / 2,
-                  y: crossStart + (crossEnd - crossStart) / 2,
-                }
-              : {
-                  x: crossStart + (crossEnd - crossStart) / 2,
-                  y: prevBound.bl.y + spacing / 2,
-                },
-          })
+          // 确保高度或宽度不为负数
+          const crossSize = Math.max(0, crossEnd - crossStart)
+
+          if (crossSize) {
+            results.push({
+              axis,
+              prevElement: prev,
+              nextElement: next,
+              prevSpacing: spacing,
+              nextSpacing: spacing,
+              equalSpacing: spacing,
+              box: isX
+                ? {
+                    x: prevBound.br.x,
+                    y: crossStart,
+                    width: spacing,
+                    height: crossSize,
+                  }
+                : {
+                    x: crossStart,
+                    y: prevBound.bl.y,
+                    width: crossSize,
+                    height: spacing,
+                  },
+              label: isX
+                ? {
+                    x: prevBound.br.x + spacing / 2,
+                    y: crossStart + (crossEnd - crossStart) / 2,
+                  }
+                : {
+                    x: crossStart + (crossEnd - crossStart) / 2,
+                    y: prevBound.bl.y + spacing / 2,
+                  },
+            })
+          }
         }
       }
     }
