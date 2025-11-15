@@ -39,6 +39,8 @@ export const theme_1: SnapConfig = {
  * 提供合理的默认值，确保吸附功能正常工作
  */
 export const DEFAULT_CONFIG: Required<SnapConfig> = {
+  // 默认只监听 move
+  attachEvents: ['move'],
   // 父容器，null表示使用app.tree
   parentContainer: null,
   // 默认不过滤任何元素

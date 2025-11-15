@@ -16,16 +16,10 @@ import type { ISimulateElement } from '@leafer-in/interface'
 import type { Box } from '@leafer-ui/core'
 import type { IApp, IUI } from '@leafer-ui/interface'
 import type { LineCollisionResult, SnapConfig, SnapLine, SnapPoint } from './types'
-import { EditorMoveEvent } from '@leafer-in/editor'
+import { EditorMoveEvent, EditorScaleEvent } from '@leafer-in/editor'
 import { dataType, KeyEvent, LayoutEvent, PointerEvent, UI } from '@leafer-ui/core'
 import { DEFAULT_CONFIG } from './config'
-import {
-  calculateSnap,
-  createSnapLines,
-  createSnapPoints,
-  filterMidPoints,
-  selectBestLineCollision,
-} from './snap-calc'
+import { calculateSnap, createSnapLines, createSnapPoints, filterMidPoints, selectBestLineCollision } from './snap-calc'
 import {
   destroyRenderElements,
   drawDistanceLabels,
@@ -35,13 +29,7 @@ import {
   drawSnapPoints,
   hideRenderElements,
 } from './snap-render'
-import {
-  calculateDistanceLabels,
-  calculateEqualSpacing,
-  getAllElements,
-  getElementBoundPoints,
-  toFixed,
-} from './utils'
+import { calculateDistanceLabels, calculateEqualSpacing, getAllElements, getElementBoundPoints, toFixed } from './utils'
 
 // 扩展UI元素属性
 UI.addAttr('isSnap', true, dataType)
@@ -147,8 +135,9 @@ export class Snap {
    * 确保事件处理函数中的 this 指向正确
    */
   private bindEventHandlers(): void {
-    this.handleBeforeMove = this.handleBeforeMove.bind(this)
+    this.handleCollectElements = this.handleCollectElements.bind(this)
     this.handleMove = this.handleMove.bind(this)
+    this.handleScale = this.handleScale.bind(this)
     this.clear = this.clear.bind(this)
     this.destroy = this.destroy.bind(this)
     this.handleKeyEvent = this.handleKeyEvent.bind(this)
@@ -185,11 +174,17 @@ export class Snap {
    */
   private attachEvents(): void {
     const { editor } = this.app
-    editor?.on(EditorMoveEvent.BEFORE_MOVE, this.handleBeforeMove)
+    editor?.on(EditorMoveEvent.BEFORE_MOVE, this.handleCollectElements)
+    editor?.on(EditorScaleEvent.BEFORE_SCALE, this.handleCollectElements)
     editor?.on(EditorMoveEvent.MOVE, this.handleMove)
+    editor?.on(EditorScaleEvent.SCALE, this.handleScale)
     this.app.on(PointerEvent.UP, this.destroy)
     this.app.tree?.on(LayoutEvent.AFTER, this.clear)
     this.app.on([KeyEvent.DOWN, KeyEvent.UP], this.handleKeyEvent, { capture: true })
+  }
+
+  private isAttached(name: 'move' | 'scale'): boolean {
+    return this.config.attachEvents.includes(name)
   }
 
   /**
@@ -198,19 +193,20 @@ export class Snap {
    */
   private detachEvents(): void {
     const { editor } = this.app
-    editor?.off(EditorMoveEvent.BEFORE_MOVE, this.handleBeforeMove)
+    editor?.off(EditorMoveEvent.BEFORE_MOVE, this.handleCollectElements)
+    editor?.off(EditorScaleEvent.BEFORE_SCALE, this.handleCollectElements)
     editor?.off(EditorMoveEvent.MOVE, this.handleMove)
+    editor?.off(EditorScaleEvent.SCALE, this.handleScale)
     this.app.off(PointerEvent.UP, this.destroy)
     this.app.tree?.off(LayoutEvent.AFTER, this.clear)
     this.app.off([KeyEvent.DOWN, KeyEvent.UP], this.handleKeyEvent, { capture: true })
   }
 
   /**
-   * 处理移动前事件
    * 收集可吸附元素并创建吸附点和吸附线
    * @param _e 编辑器事件
    */
-  private handleBeforeMove(_e: EditorEvent): void {
+  private handleCollectElements(_e: EditorEvent): void {
     if (!this.isEnabled || this.isSnapping)
       return
     this.snapElements = this.collectSnapElements()
@@ -227,19 +223,37 @@ export class Snap {
   private handleMove(event: EditorMoveEvent): void {
     if (!this.isEnabled)
       return
+    if (!this.isAttached('move'))
+      return
     const { moveX, moveY } = event
     if (!moveX && !moveY)
       return
 
-    this.executeMove(event)
+    this.executeAction(event)
   }
 
   /**
-   * 执行移动处理逻辑
+   * 处理缩放事件
+   * 缩放时检查吸附元素并更新吸附点
+   * @param event 缩放事件
+   */
+  private handleScale(event: EditorScaleEvent): void {
+    if (!this.isEnabled)
+      return
+    if (!this.isAttached('scale'))
+      return
+    const { scaleX, scaleY } = event
+    if (!scaleX && !scaleY)
+      return
+
+    this.executeAction(event)
+  }
+
+  /**
    * 实际的吸附计算和渲染逻辑
    * @param event 移动事件
    */
-  private executeMove(event: EditorMoveEvent): void {
+  private executeAction(event: EditorMoveEvent | EditorScaleEvent): void {
     const { target } = event
 
     if (this.isSnapping) {
@@ -252,25 +266,26 @@ export class Snap {
     }
     const targetPoints = getElementBoundPoints(target, this.app.tree)
 
-    const forSnap = calculateSnap(
-      targetPoints,
-      [
-        ...this.snapLines,
-        ...this.snapLines4SpacingBoxes,
-      ],
-      this.config.snapSize,
-    )
+    if (event.type === EditorMoveEvent.MOVE) {
+      const forSnap = calculateSnap(
+        targetPoints,
+        [
+          ...this.snapLines,
+          ...this.snapLines4SpacingBoxes,
+        ],
+        this.config.snapSize,
+      )
+      this.applySnapOffset(target, {
+        x: selectBestLineCollision(forSnap.x),
+        y: selectBestLineCollision(forSnap.y),
+      })
+    }
 
     const forDrawLine = calculateSnap(
       targetPoints,
       this.snapLines,
       this.config.snapSize,
     )
-
-    this.applySnapOffset(target, {
-      x: selectBestLineCollision(forSnap.x),
-      y: selectBestLineCollision(forSnap.y),
-    })
 
     if (this.config.showLine && (forDrawLine.x.length || forDrawLine.y.length)) {
       this.renderSnapLines(target, forDrawLine)

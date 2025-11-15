@@ -41,6 +41,12 @@ snap.enable(true)
  * 定义吸附功能的各种配置选项
  */
 export interface SnapConfig {
+  /**
+   * 吸附事件监听的数组： move、scale, 默认只监听 move
+   *
+   * 注意！！！ scale 事件监听时只会显示参考线，不触发吸附
+   */
+  attachEvents?: ('move' | 'scale')[]
   /** 基于哪个容器计算吸附元素，默认为 app.tree */
   parentContainer?: IUI
   /** 自定义过滤规则，用于排除特定元素 */
