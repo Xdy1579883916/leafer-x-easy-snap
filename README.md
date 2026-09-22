@@ -1,3 +1,5 @@
+
+
 # leafer-x-easy-snap
 
 [![npm version][npm-version-src]][npm-version-href]
@@ -66,7 +68,7 @@ export interface SnapConfig {
   /** 吸附线宽度，默认为 1 */
   strokeWidth?: number
   /** 吸附线虚线样式，默认为 null（实线） */
-  dashPattern?: number[]
+  dashPattern?: number[] | null
   /** 距离标签样式，包含线、框和文本样式 */
   distanceLabelStyle?: {
     line?: Partial<ILine>
